@@ -1,0 +1,98 @@
+﻿@page "/ml"
+@inject IMLService mlService;
+
+@using System.Globalization
+@using Microsoft.ML.Data;
+@using Microsoft.ML;
+@using PricePredictionApp.Models;
+@using PricePredictionApp.Services;
+@using static PricePredictionApp.PredictionModel;
+
+<h3>Machine Learning</h3>
+
+<div class="row">
+    <input type="submit" value="Train" @onclick="Train" class="btn-primary" /> &nbsp;
+    <input type="submit" value="Evaluate" @onclick="Evaluate" class="btn-primary" />
+</div>
+
+<div class="row">
+    Vendor ID: <input class="form-control mb-2" type="text" @bind-value="TaxiTrip.VendorId" >
+</div>
+
+<div class="row">
+    Rate Code: <input class="form-control mb-2" type="text" @bind-value="TaxiTrip.RateCode">
+</div>
+
+<div class="row">
+    Passenger Count: <input class="form-control mb-2" type="text" @bind-value="TaxiTrip.PassengerCount">
+</div>
+
+<div class="row">
+    Trip Time: <input class="form-control mb-2" type="text" @bind-value="TaxiTrip.TripTime">
+</div>
+
+<div class="row">
+    Trip Distance: <input class="form-control mb-2" type="text" @bind-value="TaxiTrip.TripDistance">
+</div>
+
+<div class="row">
+    Payment Type: <input class="form-control mb-2" type="text" @bind-value="TaxiTrip.PaymentType">
+</div>
+
+<div class="row">
+    Fare Amount: <input class="form-control mb-2" type="text" @bind-value="TaxiTripFarePrediction.Score">
+</div>
+
+<div class="row">
+    <input type="submit" value="Predict" @onclick="Predict" class="btn-primary" />
+</div>
+
+@code {
+    public TaxiTrip TaxiTrip { get; set; } = new ();
+    public ModelOutput TaxiTripFarePrediction { get; set; } = new();
+    //public RegressionMetrics Metrics { get; set; };
+
+    public async Task Train()
+    {
+        var mlContext = new MLContext();
+        var dataService = new DataService();
+        var data = await dataService.ReadCsvFile("taxi-fare-train.csv");
+        var dataView = mlContext.Data.LoadFromEnumerable<TaxiTrip>(data);
+
+        var model = PredictionModel.RetrainPipeline(mlContext, dataView);
+
+        var modelPath = Path.Combine(FileSystem.AppDataDirectory, "Model.zip");
+        mlContext.Model.Save(model, dataView.Schema, modelPath);
+
+        //await mlService.Train();
+    }
+
+    public async Task Evaluate()
+    {
+        //Metrics = await mlService.Evaluate();
+    }
+
+    public void Predict()
+    {
+        //Load sample data
+        var sampleData = new PredictionModel.ModelInput()
+            {
+                Vendor_id = @"CMT",
+                Rate_code = 1,
+                Passenger_count = 1,
+                Trip_time_in_secs = 474,
+                Trip_distance = 1.5f,
+                Payment_type = @"CRD",
+            };
+
+        //Load model and predict output
+        TaxiTripFarePrediction = PredictionModel.Predict(sampleData);
+
+
+        //TaxiTripFarePrediction = mlService.TestSinglePrediction(TaxiTrip);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+    }
+}

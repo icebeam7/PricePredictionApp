@@ -1,0 +1,52 @@
+﻿@page "/pagedata"
+
+@using System.Globalization
+@using PricePredictionApp.Models;
+@using PricePredictionApp.Services;
+@inject IDataService dataService;
+
+<h3>Data</h3>
+
+@if (taxiTrips == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Vendor ID</th>
+                <th>Rate Code</th>
+                <th>Passenger Count</th>
+                <th>Trip Time (s)</th>
+                <th>Trip Distance (km)</th>
+                <th>Payment Type</th>
+                <th>Fare Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var taxiTrip in taxiTrips)
+            {
+                <tr>
+                    <td>@taxiTrip.VendorId</td>
+                    <td>@taxiTrip.RateCode</td>
+                    <td>@taxiTrip.PassengerCount</td>
+                    <td>@taxiTrip.TripTime.ToString("N2")</td>
+                    <td>@taxiTrip.TripDistance.ToString("N2")</td>
+                    <td>@taxiTrip.PaymentType</td>
+                    <td>@taxiTrip.FareAmount.ToString("C2")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    List<TaxiTrip> taxiTrips;
+
+    protected override async Task OnInitializedAsync()
+    {
+        taxiTrips = (await dataService.GetData()).ToList();
+    }
+}
